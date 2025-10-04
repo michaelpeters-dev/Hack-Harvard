@@ -15,12 +15,15 @@ struct VisionProApp: App {
 }
 
 final class DependencyContainer: ObservableObject {
+    // You can keep these around for later, but they're not required for the hardcoded loop.
     let streamingService: VisionStreamingService
     let geminiService: VisionGeminiService
     let objectTrackingService: ObjectTrackingService
     let spatialAudioService: SpatialAudioService
     let gazeTrackingService: GazeTrackingService
     let helperConnectionService: HelperConnectionService
+
+    // ✅ New: simple no-arg init for the hardcoded ViewModel
     let immersiveViewModel: ImmersiveViewModel
 
     init() {
@@ -47,12 +50,8 @@ final class DependencyContainer: ObservableObject {
         )
         self.streamingService = streamingService
 
-        self.immersiveViewModel = ImmersiveViewModel(
-            streamingService: streamingService,
-            objectTrackingService: objectTrackingService,
-            spatialAudioService: spatialAudioService,
-            helperConnectionService: helperConnectionService
-        )
+        // ⬇️ Use the simplified, self-contained ViewModel (no LAN / no services required)
+        self.immersiveViewModel = ImmersiveViewModel()
     }
 }
 

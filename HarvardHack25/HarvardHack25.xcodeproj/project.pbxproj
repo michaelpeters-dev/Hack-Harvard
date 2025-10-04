@@ -11,7 +11,20 @@
 		BE93D47E2E90DDDB009AA809 /* SharedModels in Frameworks */ = {isa = PBXBuildFile; productRef = BE93D47D2E90DDDB009AA809 /* SharedModels */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		220BFE032E91826B00D36806 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		220BFE052E91826B00D36806 /* CaptionServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CaptionServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE93D3D42E90C8F9009AA809 /* HarvardHack25.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HarvardHack25.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE93D3D82E90C8F9009AA809 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
 		BE93D3DB2E90C8F9009AA809 /* SharedModels */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = SharedModels; sourceTree = "<group>"; };
@@ -28,6 +41,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		220BFE062E91826B00D36806 /* CaptionServer */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CaptionServer;
+			sourceTree = "<group>";
+		};
 		BE93D3D62E90C8F9009AA809 /* HarvardHack25 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -39,6 +57,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		220BFE022E91826B00D36806 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE93D3D12E90C8F9009AA809 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -56,6 +81,7 @@
 			children = (
 				BE93D3D62E90C8F9009AA809 /* HarvardHack25 */,
 				BE93D3D72E90C8F9009AA809 /* Packages */,
+				220BFE062E91826B00D36806 /* CaptionServer */,
 				BE93D3D52E90C8F9009AA809 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				BE93D3D42E90C8F9009AA809 /* HarvardHack25.app */,
+				220BFE052E91826B00D36806 /* CaptionServer */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -80,6 +107,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		220BFE042E91826B00D36806 /* CaptionServer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 220BFE092E91826B00D36806 /* Build configuration list for PBXNativeTarget "CaptionServer" */;
+			buildPhases = (
+				220BFE012E91826B00D36806 /* Sources */,
+				220BFE022E91826B00D36806 /* Frameworks */,
+				220BFE032E91826B00D36806 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				220BFE062E91826B00D36806 /* CaptionServer */,
+			);
+			name = CaptionServer;
+			packageProductDependencies = (
+			);
+			productName = CaptionServer;
+			productReference = 220BFE052E91826B00D36806 /* CaptionServer */;
+			productType = "com.apple.product-type.tool";
+		};
 		BE93D3D32E90C8F9009AA809 /* HarvardHack25 */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = BE93D3E32E90C8F9009AA809 /* Build configuration list for PBXNativeTarget "HarvardHack25" */;
@@ -114,6 +163,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					220BFE042E91826B00D36806 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
 					BE93D3D32E90C8F9009AA809 = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
@@ -137,6 +189,7 @@
 			projectRoot = "";
 			targets = (
 				BE93D3D32E90C8F9009AA809 /* HarvardHack25 */,
+				220BFE042E91826B00D36806 /* CaptionServer */,
 			);
 		};
 /* End PBXProject section */
@@ -152,6 +205,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		220BFE012E91826B00D36806 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE93D3D02E90C8F9009AA809 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -162,6 +222,36 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		220BFE0A2E91826B00D36806 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 4JUBDT8B48;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		220BFE0B2E91826B00D36806 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 4JUBDT8B48;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		BE93D3E42E90C8F9009AA809 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -342,6 +432,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		220BFE092E91826B00D36806 /* Build configuration list for PBXNativeTarget "CaptionServer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				220BFE0A2E91826B00D36806 /* Debug */,
+				220BFE0B2E91826B00D36806 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		BE93D3CF2E90C8F9009AA809 /* Build configuration list for PBXProject "HarvardHack25" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

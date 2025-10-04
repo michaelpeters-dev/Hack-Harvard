@@ -19,15 +19,31 @@ struct ImmersiveView: View {
 
     private var overlayPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(viewModel.isStreaming ? "Streaming: Active" : "Streaming: Stopped")
+            Text(viewModel.isStreaming ? "Demo Mode: Ready" : "Demo Mode: Stopped")
                 .font(.headline)
                 .foregroundStyle(viewModel.isStreaming ? .green : .red)
+
             if let error = viewModel.lastErrorDescription {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-            ControlPanelView(requestHelper: viewModel.requestHelperManually)
+
+            // 🔹 Single button now does ROI -> POST (local) -> TTS
+            Button("Scan → POST (Local)") {
+                viewModel.scanOnceHardcoded()
+            }
+            .buttonStyle(.borderedProminent)
+
+            // Debug readouts
+            VStack(alignment: .leading, spacing: 6) {
+                Text("LAN caption: \(viewModel.lastLANCaption)")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("JPEG bytes: \(viewModel.lastJPEGBytes)  |  Crop: \(viewModel.lastCropSide)x\(viewModel.lastCropSide)")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            // Leave your object list (it's fine if empty)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
                     ForEach(viewModel.objects) { object in
@@ -41,3 +57,4 @@ struct ImmersiveView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
+
