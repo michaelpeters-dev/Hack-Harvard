@@ -25,24 +25,47 @@ struct ImmersiveView: View {
             VStack(alignment: .leading, spacing: 16) {
                 streamingStatus
 
-                if let error = viewModel.lastErrorDescription {
+                // Endpoint + Ping row (diagnostics)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Endpoint: \(viewModel.endpointDescription)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 10) {
+                        Button("Ping Local Server") { viewModel.pingServer() }
+                            .buttonStyle(.bordered)
+                        Text("Ping: \(viewModel.lastPingStatus)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let error = viewModel.lastErrorDescription, !error.isEmpty {
                     ErrorCallout(message: error)
                 }
 
                 Divider().blendMode(.plusLighter)
 
-                Button(action: viewModel.scanOnceHardcoded) {
-                    Label("Scan & Describe", systemImage: "viewfinder.rectangular")
-                        .font(.title3.weight(.semibold))
-                        .frame(maxWidth: .infinity)
+                // Single action: ROI → POST → TTS (debounced)
+                Button {
+                    viewModel.scanOnceHardcoded()
+                } label: {
+                    HStack(spacing: 8) {
+                        if viewModel.isBusy { ProgressView().scaleEffect(0.85) }
+                        Label(viewModel.isBusy ? "Scanning…" : "Scan & Describe",
+                              systemImage: "viewfinder.rectangular")
+                            .font(.title3.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                    }
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isBusy)
 
                 debugMetrics
                 helperStatusView
 
                 Divider().blendMode(.plusLighter)
 
+                // Object list (optional, keeps compatibility with your overlays)
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(viewModel.objects) { object in
