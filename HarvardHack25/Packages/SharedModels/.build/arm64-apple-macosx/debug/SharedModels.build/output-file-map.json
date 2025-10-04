@@ -1,0 +1,47 @@
+{
+  "": {
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/master.swiftdeps"
+  },
+  "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/Sources/SharedModels/AppError.swift": {
+    "dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/AppError.d",
+    "object": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/AppError.swift.o",
+    "swiftmodule": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/AppError~partial.swiftmodule",
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/AppError.swiftdeps",
+    "diagnostics": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/AppError.dia"
+  },
+  "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/Sources/SharedModels/DetectionModels.swift": {
+    "dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/DetectionModels.d",
+    "object": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/DetectionModels.swift.o",
+    "swiftmodule": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/DetectionModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/DetectionModels.swiftdeps",
+    "diagnostics": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/DetectionModels.dia"
+  },
+  "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/Sources/SharedModels/GeminiModels.swift": {
+    "dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/GeminiModels.d",
+    "object": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/GeminiModels.swift.o",
+    "swiftmodule": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/GeminiModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/GeminiModels.swiftdeps",
+    "diagnostics": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/GeminiModels.dia"
+  },
+  "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/Sources/SharedModels/NetworkModels.swift": {
+    "dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/NetworkModels.d",
+    "object": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/NetworkModels.swift.o",
+    "swiftmodule": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/NetworkModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/NetworkModels.swiftdeps",
+    "diagnostics": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/NetworkModels.dia"
+  },
+  "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/Sources/SharedModels/ProtocolDefinitions.swift": {
+    "dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/ProtocolDefinitions.d",
+    "object": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/ProtocolDefinitions.swift.o",
+    "swiftmodule": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/ProtocolDefinitions~partial.swiftmodule",
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/ProtocolDefinitions.swiftdeps",
+    "diagnostics": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/ProtocolDefinitions.dia"
+  },
+  "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/Sources/SharedModels/TrackingModels.swift": {
+    "dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/TrackingModels.d",
+    "object": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/TrackingModels.swift.o",
+    "swiftmodule": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/TrackingModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/TrackingModels.swiftdeps",
+    "diagnostics": "/Users/pierce/Documents/HackHarvard2025/Hack-HarvardMAIN/HarvardHack25/Packages/SharedModels/.build/arm64-apple-macosx/debug/SharedModels.build/TrackingModels.dia"
+  }
+}
