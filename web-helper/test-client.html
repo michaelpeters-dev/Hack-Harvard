@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mock Vision Pro - Test Client</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            background: #374151;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        .log {
+            background: #111;
+            padding: 15px;
+            border-radius: 6px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log div {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        input {
+            padding: 10px;
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+            background: #374151;
+            color: #fff;
+            width: 300px;
+            margin: 10px 0;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Mock Vision Pro - Test Client</h1>
+    <p>Use this to simulate a Vision Pro device and test the web helper app.</p>
+
+    <div class="status" id="status">
+        <strong>Status:</strong> <span id="statusText">Not connected</span>
+    </div>
+
+    <div>
+        <label>Session ID:</label><br>
+        <input type="text" id="sessionId" placeholder="Enter session ID from web helper">
+        <button onclick="generateSessionId()">Generate Random</button>
+    </div>
+
+    <h3>Test Actions</h3>
+    <button onclick="connect()" id="connectBtn">1. Connect to Signaling Server</button>
+    <button onclick="sendOffer()" id="offerBtn" disabled>2. Send WebRTC Offer</button>
+    <button onclick="sendHelperRequest()" id="helperBtn" disabled>3. Send Helper Request</button>
+    <button onclick="disconnect()" id="disconnectBtn" disabled>4. Disconnect</button>
+
+    <h3>Log</h3>
+    <div class="log" id="log"></div>
+
+    <script>
+        let socket = null;
+        let sessionID = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString();
+            entry.className = type;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(text, connected = false) {
+            document.getElementById('statusText').textContent = text;
+            document.getElementById('connectBtn').disabled = connected;
+            document.getElementById('offerBtn').disabled = !connected;
+            document.getElementById('helperBtn').disabled = !connected;
+            document.getElementById('disconnectBtn').disabled = !connected;
+        }
+
+        function generateSessionId() {
+            const id = crypto.randomUUID();
+            document.getElementById('sessionId').value = id;
+            log('Generated session ID: ' + id.substring(0, 8) + '...', 'success');
+        }
+
+        function connect() {
+            sessionID = document.getElementById('sessionId').value;
+            if (!sessionID) {
+                alert('Please enter a session ID');
+                return;
+            }
+
+            log('Connecting to Socket.IO server at http://localhost:3001...', 'warning');
+            
+            socket = io('http://localhost:3001');
+
+            socket.on('connect', () => {
+                log('✓ Connected to signaling server!', 'success');
+                updateStatus('Connected', true);
+                
+                // Register as Vision Pro device
+                socket.emit('register-vision-pro', { sessionID });
+                log(`Registered as Vision Pro with session: ${sessionID.substring(0, 8)}...`, 'success');
+            });
+
+            socket.on('disconnect', () => {
+                log('Disconnected from server', 'error');
+                updateStatus('Disconnected', false);
+            });
+
+            socket.on('signaling', (envelope) => {
+                log(`← Received signaling: ${envelope.payload?.type || 'unknown'}`, 'success');
+                console.log('Full envelope:', envelope);
+            });
+
+            socket.on('registered', (data) => {
+                log(`Registered as: ${data.role}`, 'success');
+            });
+        }
+
+        function sendOffer() {
+            if (!socket || !sessionID) return;
+
+            const offer = {
+                sessionID: sessionID,
+                timestamp: new Date().toISOString(),
+                payload: {
+                    type: 'offer',
+                    offer: {
+                        kind: 'offer',
+                        sdp: 'v=0\r\no=- 123456789 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=msid-semantic: WMS\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n'
+                    }
+                }
+            };
+
+            socket.emit('signaling', offer);
+            log('→ Sent WebRTC offer to web helper', 'warning');
+            log('Check web helper console for response!', 'warning');
+        }
+
+        function sendHelperRequest() {
+            if (!socket || !sessionID) return;
+
+            const helperRequest = {
+                sessionID: sessionID,
+                ping: {
+                    requestID: crypto.randomUUID(),
+                    reason: {
+                        type: 'lowConfidence',
+                        objectType: 'Aspirin Bottle',
+                        confidence: 0.65
+                    },
+                    preferredLanguage: 'en-US'
+                }
+            };
+
+            socket.emit('helper-request', helperRequest);
+            log('→ Sent helper request (Low confidence: Aspirin Bottle 65%)', 'warning');
+            log('Check web helper UI for notification panel!', 'warning');
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('Disconnected', 'error');
+                updateStatus('Not connected', false);
+            }
+        }
+
+        // Initialize
+        log('Mock Vision Pro Test Client ready', 'success');
+        log('Step 1: Enter the session ID from your web helper (top-right corner)', 'warning');
+        log('Step 2: Click "Connect to Signaling Server"', 'warning');
+        log('Step 3: Try sending offers and helper requests', 'warning');
+    </script>
+</body>
+</html>
+

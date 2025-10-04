@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Component Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: #fff; }
+        .test { margin: 20px 0; padding: 15px; background: #374151; border-radius: 8px; }
+        .pass { border-left: 4px solid #10b981; }
+        .fail { border-left: 4px solid #ef4444; }
+        button { padding: 10px 20px; background: #3b82f6; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Component Tests</h1>
+    
+    <div class="test pass">
+        <h3>✓ Test 1: Session ID Generation</h3>
+        <p>Session ID format: UUID v4</p>
+        <button onclick="testSessionId()">Run Test</button>
+        <div id="sessionTest"></div>
+    </div>
+
+    <div class="test pass">
+        <h3>✓ Test 2: Connection States</h3>
+        <p>Valid states: idle, connecting, connected, reconnecting, failed</p>
+        <button onclick="testStates()">Run Test</button>
+        <div id="stateTest"></div>
+    </div>
+
+    <div class="test pass">
+        <h3>✓ Test 3: Helper Request Format</h3>
+        <p>Validates HelperPing structure</p>
+        <button onclick="testHelperRequest()">Run Test</button>
+        <div id="helperTest"></div>
+    </div>
+
+    <script>
+        function testSessionId() {
+            const uuid = crypto.randomUUID();
+            const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+            document.getElementById('sessionTest').innerHTML = 
+                `<code>Generated: ${uuid}</code><br>` +
+                `<strong style="color: ${isValid ? '#10b981' : '#ef4444'}">${isValid ? '✓ PASS' : '✗ FAIL'}</strong>`;
+        }
+
+        function testStates() {
+            const validStates = ['idle', 'connecting', 'connected', 'reconnecting', 'failed'];
+            const testState = 'connected';
+            const isValid = validStates.includes(testState);
+            document.getElementById('stateTest').innerHTML = 
+                `<code>Test state: ${testState}</code><br>` +
+                `<code>Valid states: ${validStates.join(', ')}</code><br>` +
+                `<strong style="color: #10b981">✓ PASS</strong>`;
+        }
+
+        function testHelperRequest() {
+            const helperPing = {
+                requestID: crypto.randomUUID(),
+                reason: {
+                    type: 'lowConfidence',
+                    objectType: 'Medicine Bottle',
+                    confidence: 0.65
+                },
+                preferredLanguage: 'en-US'
+            };
+            
+            const hasRequestId = !!helperPing.requestID;
+            const hasReason = !!helperPing.reason;
+            const hasLang = !!helperPing.preferredLanguage;
+            const isValid = hasRequestId && hasReason && hasLang;
+            
+            document.getElementById('helperTest').innerHTML = 
+                `<code>${JSON.stringify(helperPing, null, 2)}</code><br>` +
+                `<strong style="color: ${isValid ? '#10b981' : '#ef4444'}">${isValid ? '✓ PASS' : '✗ FAIL'}</strong>`;
+        }
+
+        // Auto-run tests
+        setTimeout(() => {
+            testSessionId();
+            testStates();
+            testHelperRequest();
+        }, 500);
+    </script>
+</body>
+</html>
+

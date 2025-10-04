@@ -1,0 +1,10 @@
+node_modules
+.next
+.env*.local
+.DS_Store
+*.log
+.turbo
+server/socket-server.js
+test-client.html
+test-components.html
+

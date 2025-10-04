@@ -1,0 +1,23 @@
+{
+    "name": "vision-pro-signaling-server",
+    "version": "1.0.0",
+    "description": "Socket.IO signaling server for Vision Pro WebRTC connections",
+    "main": "socket-server.js",
+    "scripts": {
+        "start": "node socket-server.js"
+    },
+    "keywords": [
+        "socket.io",
+        "webrtc",
+        "signaling",
+        "vision-pro"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "socket.io": "^4.8.1"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
