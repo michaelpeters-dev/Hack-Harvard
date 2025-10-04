@@ -51,12 +51,12 @@ final class ImmersiveViewModel: ObservableObject {
         Task.detached { [weak self] in
             guard let self else { return }
             do {
-                guard let url = Bundle.main.url(forResource: "gift", withExtension: "jpg"),
+                guard let url = Bundle.main.url(forResource: "beer", withExtension: "jpg"),
                       let src = CGImageSourceCreateWithURL(url as CFURL, nil),
                       let cg  = CGImageSourceCreateImageAtIndex(src, 0, nil)
                 else {
                     await MainActor.run {
-                        self.lastErrorDescription = "Failed to load gift.jpg (check filename & Target Membership)"
+                        self.lastErrorDescription = "Failed to load beer.jpg (check filename & Target Membership)"
                     }
                     return
                 }
