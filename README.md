@@ -3,7 +3,7 @@
 Welcome to the dual-app accessibility platform for Apple Vision Pro and iOS companion devices. This repo contains the implementation scaffold for the "Context-Aware Object Reader" defined in the HackHarvard 2025 requirements.
 
 ## Repo Layout
-
+test
 - `VisionProApp/` – visionOS spatial experience (SwiftUI, RealityKit, PHASE) with modular services and view models
 - `MobileApp/` – iOS companion for 24/7 streaming (SwiftUI, AVFoundation, WebRTC skeleton)
 - `SharedModels/` – Swift package hosting shared network and AI models plus service protocols
