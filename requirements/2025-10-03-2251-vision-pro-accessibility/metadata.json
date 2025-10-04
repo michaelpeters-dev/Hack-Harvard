@@ -1,0 +1,29 @@
+{
+  "id": "vision-pro-accessibility",
+  "started": "2025-10-03T22:51:00Z",
+  "lastUpdated": "2025-10-03T22:55:00Z",
+  "status": "active",
+  "phase": "complete",
+  "progress": {
+    "discovery": {
+      "answered": 5,
+      "total": 5
+    },
+    "detail": {
+      "answered": 5,
+      "total": 5
+    }
+  },
+  "contextFiles": [
+    "visionOS ARKit APIs",
+    "Google Gemini Swift SDK",
+    "WebRTC iOS implementation",
+    "visionOS accessibility features"
+  ],
+  "relatedFeatures": [
+    "Be My Eyes (mobile app reference)",
+    "visionOS eye-scrolling",
+    "ARKit object tracking",
+    "Firebase AI Logic multimodal"
+  ]
+}
