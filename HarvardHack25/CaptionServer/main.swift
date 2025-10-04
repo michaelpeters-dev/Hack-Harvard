@@ -7,7 +7,6 @@ var lastPrompt: String = "(none)"
 var lastBytes: Int = 0
 var lastSavedURL: URL?
 
-// Also write to Desktop for easy manual inspection
 let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
 let desktopFile = desktop.appendingPathComponent("last_roi.jpg")
 
@@ -26,52 +25,66 @@ RunLoop.main.run()
 // MARK: - HTTP handling
 
 func handleConnection(_ conn: NWConnection) {
-    readUntilDoubleCRLF(on: conn) { headerData in
+    readHeadersAndOverflow(on: conn) { headerData, overflow in
         guard let headerData,
               let header = String(data: headerData, encoding: .utf8),
-              let requestLine = header.components(separatedBy: "\r\n").first
-        else { conn.cancel(); return }
+              let requestLine = header.components(separatedBy: "\r\n").first else {
+            conn.cancel(); return
+        }
 
         let parts = requestLine.split(separator: " ")
         let method = parts.first.map(String.init) ?? "GET"
         let path   = parts.dropFirst().first.map(String.init) ?? "/"
 
+        // If client asked for 100-continue, be polite
+        if (parseHeader(header, key: "Expect")?.lowercased() == "100-continue") {
+            let interim = "HTTP/1.1 100 Continue\r\n\r\n".data(using: .utf8)!
+            conn.send(content: interim, completion: .contentProcessed { _ in })
+        }
+
         if method == "POST", path == "/caption" {
-            let contentLength = parseContentLength(header) ?? 0
-            readExactBytes(on: conn, count: contentLength) { body in
+            // Prefer to read until close (works with Connection: close)
+            let contentLength = parseContentLength(header)
+            readBody(on: conn, overflow: overflow, contentLength: contentLength) { body in
                 guard let body else { sendHTTP400(conn, "Bad Request"); return }
+
                 lastJPEG = body
                 lastBytes = body.count
                 lastPrompt = parseHeader(header, key: "X-Prompt") ?? "(none)"
-                // Save to Desktop for convenience
                 try? body.write(to: desktopFile)
                 lastSavedURL = desktopFile
-                print("POST /caption  \(body.count) bytes  prompt=\"\(lastPrompt)\"  saved=\(desktopFile.path)")
 
-                let caption = "Frothy beer in a glass." // test caption
+                print("POST /caption  \(body.count) bytes  prompt=\"\(lastPrompt)\" saved=\(desktopFile.path)")
+
+                // Return a deterministic caption for testing
+                let caption = "Frothy beer in a glass."
                 sendHTTP200Text(conn, caption)
             }
         } else if method == "GET", path == "/" {
             sendIndexHTML(conn)
         } else if method == "GET", path == "/last.jpg" {
-            if let img = lastJPEG {
-                sendHTTP200JPEG(conn, img)
-            } else {
-                sendHTTP404(conn, "No image uploaded yet.")
-            }
+            if let img = lastJPEG { sendHTTP200JPEG(conn, img) }
+            else { sendHTTP404(conn, "No image uploaded yet.") }
         } else {
             sendHTTP404(conn, "Not found")
         }
     }
 }
 
-func readUntilDoubleCRLF(on conn: NWConnection, _ cb: @escaping (Data?) -> Void) {
+// Reads headers + returns (headers, overflowAfterHeaders)
+func readHeadersAndOverflow(on conn: NWConnection, _ cb: @escaping (Data?, Data?) -> Void) {
     var buffer = Data()
     func loop() {
-        conn.receive(minimumIncompleteLength: 1, maximumLength: 4096) { data, _, isComplete, error in
+        conn.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
             if let d = data { buffer.append(d) }
-            if buffer.range(of: Data("\r\n\r\n".utf8)) != nil { cb(buffer); return }
-            if isComplete || error != nil { cb(nil); return }
+            if let range = buffer.range(of: Data("\r\n\r\n".utf8)) {
+                let headerEnd = range.upperBound
+                let headers = buffer.subdata(in: 0..<headerEnd)
+                let overflow = (headerEnd < buffer.count) ? buffer.subdata(in: headerEnd..<buffer.count) : nil
+                cb(headers, overflow)
+                return
+            }
+            if isComplete || error != nil { cb(nil, nil); return }
             loop()
         }
     }
@@ -92,7 +105,42 @@ func parseHeader(_ header: String, key: String) -> String? {
     return nil
 }
 
+/// Reads the request body.
+/// If Content-Length is present, reads exactly that many bytes (including any overflow).
+/// Otherwise, reads until the connection closes.
+func readBody(on conn: NWConnection, overflow: Data?, contentLength: Int?, _ cb: @escaping (Data?) -> Void) {
+    // If we have a length, honor it (simple & fast)
+    if let len = contentLength {
+        let already = overflow?.count ?? 0
+        let remaining = max(0, len - already)
+        readExactBytes(on: conn, count: remaining) { rest in
+            guard let rest else { cb(nil); return }
+            var body = Data(capacity: len)
+            if let overflow { body.append(overflow) }
+            body.append(rest)
+            cb(body)
+        }
+        return
+    }
+
+    // Otherwise read until close (Connection: close)
+    var body = Data()
+    if let overflow { body.append(overflow) }
+    func loop() {
+        conn.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
+            if let d = data { body.append(d) }
+            if isComplete || error != nil {
+                cb(body.isEmpty ? nil : body)
+                return
+            }
+            loop()
+        }
+    }
+    loop()
+}
+
 func readExactBytes(on conn: NWConnection, count: Int, _ cb: @escaping (Data?) -> Void) {
+    guard count > 0 else { cb(Data()); return }
     var remaining = count
     var out = Data(capacity: count)
     func loop() {
@@ -107,6 +155,7 @@ func readExactBytes(on conn: NWConnection, count: Int, _ cb: @escaping (Data?) -
     loop()
 }
 
+// -------- Responses
 func sendHTTP200Text(_ conn: NWConnection, _ text: String) {
     let body = Data(text.utf8)
     let resp = """
@@ -191,7 +240,6 @@ func sendIndexHTML(_ conn: NWConnection) {
     </body>
     </html>
     """
-
     let body = Data(html.utf8)
     let resp = """
     HTTP/1.1 200 OK\r
@@ -204,9 +252,9 @@ func sendIndexHTML(_ conn: NWConnection) {
     conn.send(content: resp, completion: .contentProcessed { _ in conn.cancel() })
 }
 
-
 func escapeHTML(_ s: String) -> String {
     s.replacingOccurrences(of: "&", with: "&amp;")
      .replacingOccurrences(of: "<", with: "&lt;")
      .replacingOccurrences(of: ">", with: "&gt;")
 }
+

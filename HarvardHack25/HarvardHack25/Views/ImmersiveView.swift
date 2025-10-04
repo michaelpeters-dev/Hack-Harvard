@@ -23,19 +23,35 @@ struct ImmersiveView: View {
                 .font(.headline)
                 .foregroundStyle(viewModel.isStreaming ? .green : .red)
 
+            Text("Endpoint: \(viewModel.endpointDescription)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
             if let error = viewModel.lastErrorDescription {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
 
-            // 🔹 Single button now does ROI -> POST (local) -> TTS
-            Button("Scan → POST (Local)") {
+            HStack(spacing: 10) {
+                Button("Ping Local Server") { viewModel.pingServer() }
+                    .buttonStyle(.bordered)
+                Text("Ping: \(viewModel.lastPingStatus)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
                 viewModel.scanOnceHardcoded()
+            } label: {
+                HStack(spacing: 8) {
+                    if viewModel.isBusy { ProgressView().scaleEffect(0.8) }
+                    Text(viewModel.isBusy ? "Scanning…" : "Scan → POST (Local)")
+                }
             }
             .buttonStyle(.borderedProminent)
+            .disabled(viewModel.isBusy)
 
-            // Debug readouts
             VStack(alignment: .leading, spacing: 6) {
                 Text("LAN caption: \(viewModel.lastLANCaption)")
                     .font(.caption).foregroundStyle(.secondary)
@@ -43,7 +59,6 @@ struct ImmersiveView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
-            // Leave your object list (it's fine if empty)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
                     ForEach(viewModel.objects) { object in
