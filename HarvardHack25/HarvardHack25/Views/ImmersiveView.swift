@@ -30,9 +30,9 @@ struct ImmersiveView: View {
                 }
 
                 Divider().blendMode(.plusLighter)
-
+                
                 // Primary action
-                Button(action: viewModel.scanOnceHardcoded) {
+                Button(action: viewModel.scanLatestFromCameraRoll) {   // 👈 updated
                     Label("Scan & Describe", systemImage: "viewfinder.rectangular")
                         .font(.title3.weight(.semibold))
                         .frame(maxWidth: .infinity)

@@ -9,6 +9,7 @@ import AVFoundation
 import ImageIO
 import UniformTypeIdentifiers
 import CoreGraphics
+import Photos   // ✅ NEW
 
 @MainActor
 final class ImmersiveViewModel: ObservableObject {
@@ -34,7 +35,7 @@ final class ImmersiveViewModel: ObservableObject {
     // Services
     private let ttsSynth = AVSpeechSynthesizer()
     private let lanClient = LANCaptionClient()
-    private let fallbackCaption = "beer."
+    private let fallbackCaption = "Not sure."
     private let helperService: HelperEscalationHandling?
 
     init(helperService: HelperEscalationHandling? = nil) {
@@ -47,20 +48,11 @@ final class ImmersiveViewModel: ObservableObject {
         isStreaming = true
         endpointDescription = lanClient.endpointString
 
-        // Preload & encode once to avoid first-tap flakiness
+        // Preload something so first tap isn't cold. Try latest photo; fall back to bundle.
         Task.detached { [weak self] in
             guard let self else { return }
             do {
-                guard let url = Bundle.main.url(forResource: "beer", withExtension: "jpg"),
-                      let src = CGImageSourceCreateWithURL(url as CFURL, nil),
-                      let cg  = CGImageSourceCreateImageAtIndex(src, 0, nil)
-                else {
-                    await MainActor.run {
-                        self.lastErrorDescription = "Failed to load beer.jpg (check filename & Target Membership)"
-                    }
-                    return
-                }
-                let (jpeg, side) = try centerSquareJPEG(from: cg) // free function (not actor-isolated)
+                let (jpeg, side) = try await self.latestPhotoOrBundleJPEG()
                 await MainActor.run {
                     self.cachedJPEG    = jpeg
                     self.cachedSide    = side
@@ -85,8 +77,8 @@ final class ImmersiveViewModel: ObservableObject {
         }
     }
 
-    // MARK: One-button scan → POST → TTS (debounced, retry once)
-    func scanOnceHardcoded() {
+    // MARK: Scan → latest camera roll → POST → TTS (debounced, retry once)
+    func scanLatestFromCameraRoll() {
         guard isBusy == false else { return }
         isBusy = true
         lastErrorDescription = nil
@@ -95,27 +87,37 @@ final class ImmersiveViewModel: ObservableObject {
             guard let self else { return }
             defer { self.isBusy = false }
 
-            // Use cached JPEG if available; otherwise generate once
+            // Always refresh from the latest photo; if that fails, fall back to cache/bundle
             let jpegData: Data
-            if let cached = cachedJPEG {
-                jpegData = cached
-            } else {
-                do {
-                    guard let url = Bundle.main.url(forResource: "beer", withExtension: "jpg"),
-                          let src = CGImageSourceCreateWithURL(url as CFURL, nil),
-                          let cg  = CGImageSourceCreateImageAtIndex(src, 0, nil)
-                    else { throw SimpleError("Failed to load beer.jpg") }
-                    let (j, side) = try centerSquareJPEG(from: cg)
-                    self.cachedJPEG = j
-                    self.cachedSide = side
-                    self.lastJPEGBytes = j.count
-                    self.lastCropSide  = side
-                    jpegData = j
-                } catch {
-                    self.lastErrorDescription = error.localizedDescription
-                    self.lastLANCaption = "Not sure."
-                    self.speak("Not sure.")
-                    return
+            do {
+                let (j, side) = try await self.fetchLatestPhotoJPEG()
+                self.cachedJPEG = j
+                self.cachedSide = side
+                self.lastJPEGBytes = j.count
+                self.lastCropSide  = side
+                jpegData = j
+            } catch {
+                // Fallback: use whatever we have cached, or a bundled image
+                if let cached = self.cachedJPEG {
+                    jpegData = cached
+                } else {
+                    do {
+                        guard let url = Bundle.main.url(forResource: "beer", withExtension: "jpg"),
+                              let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+                              let cg  = CGImageSourceCreateImageAtIndex(src, 0, nil)
+                        else { throw SimpleError("Failed to load beer.jpg") }
+                        let (j, side) = try centerSquareJPEG(from: cg)
+                        self.cachedJPEG = j
+                        self.cachedSide = side
+                        self.lastJPEGBytes = j.count
+                        self.lastCropSide  = side
+                        jpegData = j
+                    } catch {
+                        self.lastErrorDescription = "No latest photo and bundle fallback failed."
+                        self.lastLANCaption = self.fallbackCaption
+                        self.speak(self.fallbackCaption)
+                        return
+                    }
                 }
             }
 
@@ -133,7 +135,7 @@ final class ImmersiveViewModel: ObservableObject {
                 self.speak(spoken)
                 return
             } catch {
-                // Attempt #2 (retry with a slightly longer timeout)
+                // Attempt #2 (retry)
                 do {
                     let c2 = try await lanClient.caption(
                         jpeg: jpegData,
@@ -145,8 +147,8 @@ final class ImmersiveViewModel: ObservableObject {
                     self.speak(spoken)
                 } catch {
                     self.lastErrorDescription = "POST failed: \(error.localizedDescription)"
-                    self.lastLANCaption = "Not sure."
-                    self.speak("Not sure.")
+                    self.lastLANCaption = self.fallbackCaption
+                    self.speak(self.fallbackCaption)
                 }
             }
         }
@@ -193,6 +195,73 @@ final class ImmersiveViewModel: ObservableObject {
         case sent
         case failed
         case simulatedAcknowledged(context: String)
+    }
+
+    // MARK: Photos helpers
+
+    /// Tries latest-camera-roll photo first; on failure, returns bundled beer.jpg
+    private func latestPhotoOrBundleJPEG() async throws -> (Data, Int) {
+        do {
+            return try await fetchLatestPhotoJPEG()
+        } catch {
+            // Fallback to bundle (non-fatal during preload)
+            guard let url = Bundle.main.url(forResource: "beer", withExtension: "jpg"),
+                  let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+                  let cg  = CGImageSourceCreateImageAtIndex(src, 0, nil) else {
+                throw error
+            }
+            return try centerSquareJPEG(from: cg)
+        }
+    }
+
+    /// Requests permission if needed, then fetches most recent photo, center-crop to 320×320 JPEG.
+    private func fetchLatestPhotoJPEG() async throws -> (Data, Int) {
+        // 1) Auth
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if status == .notDetermined {
+            let newStatus = await withCheckedContinuation { (cont: CheckedContinuation<PHAuthorizationStatus, Never>) in
+                PHPhotoLibrary.requestAuthorization(for: .readWrite) { s in cont.resume(returning: s) }
+            }
+            guard newStatus == .authorized || newStatus == .limited else {
+                throw SimpleError("Photos access denied.")
+            }
+        } else if !(status == .authorized || status == .limited) {
+            throw SimpleError("Photos access denied.")
+        }
+
+        // 2) Latest asset
+        guard let asset = latestImageAsset() else {
+            throw SimpleError("No photos found.")
+        }
+
+        // 3) Image data (most reliable on Simulator)
+        let data: Data = try await withCheckedThrowingContinuation { cont in
+            let opts = PHImageRequestOptions()
+            opts.isNetworkAccessAllowed = true
+            opts.deliveryMode = .highQualityFormat
+            opts.version = .current
+            opts.isSynchronous = false
+
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: opts) { data, _, _, info in
+                if let data { cont.resume(returning: data) }
+                else { cont.resume(throwing: SimpleError("Failed to load image data.")) }
+            }
+        }
+
+        // 4) Convert to CGImage → crop/scale to 320² JPEG (your helper)
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil),
+              let cg  = CGImageSourceCreateImageAtIndex(src, 0, nil) else {
+            throw SimpleError("CGImage decode failed.")
+        }
+        return try centerSquareJPEG(from: cg)
+    }
+
+    private func latestImageAsset() -> PHAsset? {
+        let opts = PHFetchOptions()
+        opts.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        opts.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+        opts.fetchLimit = 1
+        return PHAsset.fetchAssets(with: opts).firstObject
     }
 }
 
