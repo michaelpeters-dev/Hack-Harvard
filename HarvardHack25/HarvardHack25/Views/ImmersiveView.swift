@@ -8,7 +8,6 @@ struct ImmersiveView: View {
         RealityView { _ in
             // TODO: add anchors and 3D overlays once ARKit pipeline is wired.
         }
-        .background(clickGestureOverlay)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
         .overlay(alignment: .topLeading) {
@@ -16,82 +15,50 @@ struct ImmersiveView: View {
                 .padding(.top, 28)
                 .padding(.leading, 36)
         }
+        .ornament(visibility: .visible, attachmentAnchor: .scene(.trailing), contentAlignment: .trailing) {
+            ornamentControls
+        }
     }
 
     private var overlayPanel: some View {
-        HStack(alignment: .top, spacing: 28) {
-            GlassPanel(tone: .neutral, cornerRadius: 24) {
-                VStack(alignment: .leading, spacing: 16) {
-                    streamingStatus
+        GlassPanel(tone: viewModel.isStreaming ? .success : .warning) {
+            VStack(alignment: .leading, spacing: 16) {
+                streamingStatus
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Endpoint: \(viewModel.endpointDescription)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 10) {
-                            Button("Ping Local Server") { viewModel.pingServer() }
-                                .buttonStyle(.bordered)
-                            Text("Ping: \(viewModel.lastPingStatus)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    if let error = viewModel.lastErrorDescription, !error.isEmpty {
-                        ErrorCallout(message: error)
-                    }
-
-                    Divider().blendMode(.plusLighter)
-
-                    Button {
-                        viewModel.scanOnceHardcoded()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if viewModel.isBusy { ProgressView().scaleEffect(0.85) }
-                            Label(viewModel.isBusy ? "Scanning…" : "Scan & Describe",
-                                  systemImage: "viewfinder.rectangular")
-                                .font(.title3.weight(.semibold))
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.isBusy)
-                    .accessibilityHint("Triggers spatial scan without needing to target the button visually.")
-                    .accessibilityAction(.default) {
-                        viewModel.scanOnceHardcoded()
-                    }
-
-                    debugMetrics
-                    helperStatusView
-
-                    Divider().blendMode(.plusLighter)
-
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 12) {
-                            ForEach(viewModel.objects) { object in
-                                ObjectOverlayView(object: object)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .frame(maxHeight: 260)
+                if let error = viewModel.lastErrorDescription {
+                    ErrorCallout(message: error)
                 }
-                .frame(maxWidth: 420)
-            }
 
-            GlassPanel(cornerRadius: 24) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Helper Escalation")
+                Divider().blendMode(.plusLighter)
+
+                // Primary action
+                Button(action: viewModel.scanOnceHardcoded) {
+                    Label("Scan & Describe", systemImage: "viewfinder.rectangular")
                         .font(.title3.weight(.semibold))
-                    Text("Request live support when you need more context.")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    ControlPanelView { context in
-                        viewModel.submitHelperRequest(with: context)
-                    }
+                        .frame(maxWidth: .infinity)
                 }
-                .frame(width: 320)
+                .buttonStyle(.borderedProminent)
+
+                // 🔹 NEW: Pick & describe latest photo from library
+                LatestPhotoPreview()
+                    .environmentObject(viewModel)
+
+                debugMetrics
+                helperStatusView
+
+                Divider().blendMode(.plusLighter)
+
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(alignment: .leading, spacing: 12) {
+                        ForEach(viewModel.objects) { object in
+                            ObjectOverlayView(object: object)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .frame(maxHeight: 260)
             }
+            .frame(maxWidth: 420)
         }
     }
 
@@ -158,14 +125,25 @@ struct ImmersiveView: View {
         }
     }
 
-    private var clickGestureOverlay: some View {
-        AccessibilityClickGesture {
-            viewModel.scanOnceHardcoded()
+    private var ornamentControls: some View {
+        GlassPanel {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Helper Escalation")
+                    .font(.title3.weight(.semibold))
+                Text("Request live support when you need more context.")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                ControlPanelView { context in
+                    viewModel.submitHelperRequest(with: context)
+                }
+            }
+            .frame(width: 320)
         }
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
+        .padding(.trailing, 24)
     }
 }
+
+// MARK: - UI helpers kept from your previous file
 
 private struct StatusBadge: View {
     let isActive: Bool
