@@ -8,6 +8,7 @@ struct ImmersiveView: View {
         RealityView { _ in
             // TODO: add anchors and 3D overlays once ARKit pipeline is wired.
         }
+        .background(clickGestureOverlay)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
         .overlay(alignment: .topLeading) {
@@ -15,68 +16,82 @@ struct ImmersiveView: View {
                 .padding(.top, 28)
                 .padding(.leading, 36)
         }
-        .ornament(visibility: .visible, attachmentAnchor: .scene(.trailing), contentAlignment: .trailing) {
-            ornamentControls
-        }
     }
 
     private var overlayPanel: some View {
-        GlassPanel(tone: viewModel.isStreaming ? .success : .warning) {
-            VStack(alignment: .leading, spacing: 16) {
-                streamingStatus
+        HStack(alignment: .top, spacing: 28) {
+            GlassPanel(tone: .neutral, cornerRadius: 24) {
+                VStack(alignment: .leading, spacing: 16) {
+                    streamingStatus
 
-                // Endpoint + Ping row (diagnostics)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Endpoint: \(viewModel.endpointDescription)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    HStack(spacing: 10) {
-                        Button("Ping Local Server") { viewModel.pingServer() }
-                            .buttonStyle(.bordered)
-                        Text("Ping: \(viewModel.lastPingStatus)")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Endpoint: \(viewModel.endpointDescription)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    }
-                }
-
-                if let error = viewModel.lastErrorDescription, !error.isEmpty {
-                    ErrorCallout(message: error)
-                }
-
-                Divider().blendMode(.plusLighter)
-
-                // Single action: ROI → POST → TTS (debounced)
-                Button {
-                    viewModel.scanOnceHardcoded()
-                } label: {
-                    HStack(spacing: 8) {
-                        if viewModel.isBusy { ProgressView().scaleEffect(0.85) }
-                        Label(viewModel.isBusy ? "Scanning…" : "Scan & Describe",
-                              systemImage: "viewfinder.rectangular")
-                            .font(.title3.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewModel.isBusy)
-
-                debugMetrics
-                helperStatusView
-
-                Divider().blendMode(.plusLighter)
-
-                // Object list (optional, keeps compatibility with your overlays)
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 12) {
-                        ForEach(viewModel.objects) { object in
-                            ObjectOverlayView(object: object)
+                        HStack(spacing: 10) {
+                            Button("Ping Local Server") { viewModel.pingServer() }
+                                .buttonStyle(.bordered)
+                            Text("Ping: \(viewModel.lastPingStatus)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.vertical, 4)
+
+                    if let error = viewModel.lastErrorDescription, !error.isEmpty {
+                        ErrorCallout(message: error)
+                    }
+
+                    Divider().blendMode(.plusLighter)
+
+                    Button {
+                        viewModel.scanOnceHardcoded()
+                    } label: {
+                        HStack(spacing: 8) {
+                            if viewModel.isBusy { ProgressView().scaleEffect(0.85) }
+                            Label(viewModel.isBusy ? "Scanning…" : "Scan & Describe",
+                                  systemImage: "viewfinder.rectangular")
+                                .font(.title3.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.isBusy)
+                    .accessibilityHint("Triggers spatial scan without needing to target the button visually.")
+                    .accessibilityAction(.default) {
+                        viewModel.scanOnceHardcoded()
+                    }
+
+                    debugMetrics
+                    helperStatusView
+
+                    Divider().blendMode(.plusLighter)
+
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(alignment: .leading, spacing: 12) {
+                            ForEach(viewModel.objects) { object in
+                                ObjectOverlayView(object: object)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .frame(maxHeight: 260)
                 }
-                .frame(maxHeight: 260)
+                .frame(maxWidth: 420)
             }
-            .frame(maxWidth: 420)
+
+            GlassPanel(cornerRadius: 24) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Helper Escalation")
+                        .font(.title3.weight(.semibold))
+                    Text("Request live support when you need more context.")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    ControlPanelView { context in
+                        viewModel.submitHelperRequest(with: context)
+                    }
+                }
+                .frame(width: 320)
+            }
         }
     }
 
@@ -143,21 +158,12 @@ struct ImmersiveView: View {
         }
     }
 
-    private var ornamentControls: some View {
-        GlassPanel {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Helper Escalation")
-                    .font(.title3.weight(.semibold))
-                Text("Request live support when you need more context.")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(.secondary)
-                ControlPanelView { context in
-                    viewModel.submitHelperRequest(with: context)
-                }
-            }
-            .frame(width: 320)
+    private var clickGestureOverlay: some View {
+        AccessibilityClickGesture {
+            viewModel.scanOnceHardcoded()
         }
-        .padding(.trailing, 24)
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 }
 
