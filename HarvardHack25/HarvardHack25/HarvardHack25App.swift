@@ -50,8 +50,8 @@ final class DependencyContainer: ObservableObject {
         )
         self.streamingService = streamingService
 
-        // ⬇️ Use the simplified, self-contained ViewModel (no LAN / no services required)
-        self.immersiveViewModel = ImmersiveViewModel()
+        // ⬇️ Inject helper service for ornament escalation feedback; other services remain stubbed for now.
+        self.immersiveViewModel = ImmersiveViewModel(helperService: helperConnectionService)
     }
 }
 
