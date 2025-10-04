@@ -9,7 +9,7 @@ import AVFoundation
 import ImageIO
 import UniformTypeIdentifiers
 import CoreGraphics
-import Photos   // ✅ NEW
+import Photos   // ✅ Access latest photo from camera roll
 
 @MainActor
 final class ImmersiveViewModel: ObservableObject {
@@ -242,9 +242,12 @@ final class ImmersiveViewModel: ObservableObject {
             opts.version = .current
             opts.isSynchronous = false
 
-            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: opts) { data, _, _, info in
-                if let data { cont.resume(returning: data) }
-                else { cont.resume(throwing: SimpleError("Failed to load image data.")) }
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: opts) { data, _, _, _ in
+                if let data {
+                    cont.resume(returning: data)
+                } else {
+                    cont.resume(throwing: SimpleError("Failed to load image data."))
+                }
             }
         }
 
@@ -309,3 +312,4 @@ private func centerSquareJPEG(from cg: CGImage) throws -> (Data, Int) {
     guard CGImageDestinationFinalize(dest) else { throw SimpleError("JPEG finalize failed") }
     return (data as Data, outputSide)
 }
+
