@@ -99,7 +99,7 @@ struct ImmersiveView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    PreseedLogoCircle()
+                    PreseedLogoCircle(size: 20)
                         .accessibilityLabel("Brand logo")
                 }
 
@@ -325,37 +325,45 @@ struct TypewriterCaptionText: View {
     }
 }
 
+import SwiftUI
+
 struct PreseedLogoCircle: View {
-    // Place your logo image in Assets.xcassets with this name.
-    var imageName: String = "preseed-logo-circle.jpg"
+    var size: CGFloat = 24
+    @Environment(\.displayScale) private var scale
+
+    private func snap(_ v: CGFloat) -> CGFloat { (v * scale).rounded() / scale }
 
     var body: some View {
-        ZStack {
-            // Brand mark with safe fallback if the asset isn't present yet
-            logoImage()
-                .resizable()
-                .scaledToFill()
-                .clipShape(Circle().inset(by: 6))
-        }
-        .frame(width: 28, height: 28)
-    }
+        let inset = snap(size * 0.18)
+        let ring  = max(1, snap(1))
 
-    private func logoImage() -> Image {
-        #if canImport(UIKit)
-        if let ui = UIImage(named: imageName) {
-            return Image(uiImage: ui)
-        } else {
-            return Image(systemName: "sparkles")
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(.displayP3, red: 0.18, green: 0.80, blue: 1.00),
+                            Color(.displayP3, red: 0.02, green: 0.45, blue: 1.00)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: ring))
+
+            // Size SF Symbol with .font (keeps it vector & crisp)
+            Image(systemName: "sparkles")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.white)
+                .font(.system(size: snap(size - inset * 2), weight: .semibold))
+                .offset(y: snap(-0.25))
+                .accessibilityHidden(true)
         }
-        #elseif canImport(AppKit)
-        if let ns = NSImage(named: imageName) {
-            return Image(nsImage: ns)
-        } else {
-            return Image(systemName: "sparkles")
-        }
-        #else
-        return Image(systemName: "sparkles")
-        #endif
+        .frame(width: snap(size), height: snap(size))
+        .compositingGroup()
+        // If your SDK supports colorMode:
+        .drawingGroup(opaque: false, colorMode: .linear)
+        // Otherwise, use:
+        // .drawingGroup()
     }
 }
-
