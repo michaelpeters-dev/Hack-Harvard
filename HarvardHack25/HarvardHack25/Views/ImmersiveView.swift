@@ -1,30 +1,42 @@
 import SwiftUI
-import RealityKit
 
 struct ImmersiveView: View {
     @EnvironmentObject private var viewModel: ImmersiveViewModel
 
+    // One source of truth for sizing/shape
+    private enum Panel {
+        static let width: CGFloat  = 360     // change once, both layers follow
+        static let corner: CGFloat = 22
+    }
+
+    @State private var panelScale: CGFloat = 1.0   // if you ever want to animate scale
+
     var body: some View {
-        RealityView { _ in
-            // TODO: add anchors and 3D overlays once ARKit pipeline is wired.
+        HStack(alignment: .top, spacing: 24) {
+            overlayPanel
+            captionPanel
         }
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
-        .overlay(alignment: .topLeading) {
-            overlayPanel
-                .padding(.top, 28)
-                .padding(.leading, 36)
-        }
-        .ornament(visibility: .visible, attachmentAnchor: .scene(.trailing), contentAlignment: .trailing) {
-            ornamentControls
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.top, 28)
+        .padding(.leading, 36)
     }
 
+    // MARK: - Matched outer+inner panels
     private var overlayPanel: some View {
-        GlassPanel(tone: viewModel.isStreaming ? .success : .warning) {
-            VStack(alignment: .leading, spacing: 16) {
-                streamingStatus
+        ZStack {
+            // OUTER monitor — same frame, zero inner padding so visual bounds == frame
+            GlassPanel(tone: .neutral,
+                       cornerRadius: Panel.corner,
+                       contentPadding: 0) {
+                EmptyView()
+            }
+            .frame(width: Panel.width)
+            .allowsHitTesting(false)
 
+            // INNER content — no panel, just content with padding
+            VStack(alignment: .leading, spacing: 16) {
                 if let error = viewModel.lastErrorDescription {
                     ErrorCallout(message: error)
                 }
@@ -58,25 +70,55 @@ struct ImmersiveView: View {
                 }
                 .frame(maxHeight: 260)
             }
-            .frame(maxWidth: 420)
+            .padding(20)
+            .frame(width: Panel.width)
         }
+        .frame(width: Panel.width)
+        .scaleEffect(panelScale)  // optional single knob to scale both together
+        .transition(.scale.combined(with: .opacity))
     }
 
-    private var streamingStatus: some View {
-        HStack(alignment: .center, spacing: 12) {
-            StatusBadge(isActive: viewModel.isStreaming)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.isStreaming ? "Demo Mode Active" : "Demo Mode Paused")
-                    .font(.title3.weight(.semibold))
-                Text("Spatial scan pipeline ready for a single capture.")
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(.secondary)
+    // MARK: - Caption monitor
+    private var captionPanel: some View {
+        ZStack {
+            // OUTER monitor — same frame, zero inner padding so visual bounds == frame
+            GlassPanel(tone: .neutral,
+                       cornerRadius: Panel.corner,
+                       contentPadding: 0) {
+                EmptyView()
             }
+            .frame(width: Panel.width)
+            .allowsHitTesting(false)
+
+            // INNER content — no panel, just content with padding
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 8) {
+                    Image(systemName: "quote.bubble.fill")
+                        .foregroundStyle(.cyan)
+                    Text("Caption")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    PreseedLogoCircle()
+                        .accessibilityLabel("Brand logo")
+                }
+
+                Divider().blendMode(.plusLighter)
+
+                ScrollView(showsIndicators: false) {
+                    TypewriterCaptionText(text: viewModel.lastLANCaption)
+                }
+                .frame(maxHeight: 260)
+            }
+            .padding(20)
+            .frame(width: Panel.width)
         }
-        .padding(.bottom, 6)
+        .frame(width: Panel.width)
+        .scaleEffect(panelScale)
+        .transition(.scale.combined(with: .opacity))
     }
 
+    // MARK: - Diagnostics block
     private var debugMetrics: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Diagnostics")
@@ -85,12 +127,12 @@ struct ImmersiveView: View {
 
             Grid(horizontalSpacing: 12, verticalSpacing: 10) {
                 GridRow {
-                    metricTile(title: "Caption", value: viewModel.lastLANCaption)
                     metricTile(title: "JPEG", value: "\(viewModel.lastJPEGBytes) B")
+                    metricTile(title: "Objects", value: "\(viewModel.objects.count)")
                 }
                 GridRow {
                     metricTile(title: "Crop", value: "\(viewModel.lastCropSide)×\(viewModel.lastCropSide)")
-                    metricTile(title: "Objects", value: "\(viewModel.objects.count)")
+                    metricTile(title: "Caption", value: viewModel.lastLANCaption.isEmpty ? "" : "\(viewModel.lastLANCaption.count)")
                 }
             }
         }
@@ -120,64 +162,20 @@ struct ImmersiveView: View {
     @ViewBuilder
     private var helperStatusView: some View {
         if viewModel.helperStatus != .idle {
-            HelperStatusIndicator(status: viewModel.helperStatus)
+            OverlayHelperStatusIndicator(status: viewModel.helperStatus)
                 .transition(.opacity.combined(with: .scale))
         }
     }
-
-    private var ornamentControls: some View {
-        GlassPanel {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Helper Escalation")
-                    .font(.title3.weight(.semibold))
-                Text("Request live support when you need more context.")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(.secondary)
-                ControlPanelView { context in
-                    viewModel.submitHelperRequest(with: context)
-                }
-            }
-            .frame(width: 320)
-        }
-        .padding(.trailing, 24)
-    }
 }
 
-// UIHelpers.swift
-import SwiftUI
+// MARK: - UI helpers (kept local for convenience)
 
-// Small status pill used in the header
-struct StatusBadge: View {
-    let isActive: Bool
-
-    var body: some View {
-        ZStack {
-            Capsule(style: .continuous)
-                .fill(isActive ? Color.green.gradient : Color.yellow.gradient)
-                .opacity(0.65)
-            Label(isActive ? "Ready" : "Paused",
-                  systemImage: isActive ? "waveform" : "pause.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.black.opacity(0.85))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-        }
-        .fixedSize()
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.3), radius: 6, y: 4)
-    }
-}
-
-// Callout for errors
 struct ErrorCallout: View {
     let message: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill") // valid SF Symbol
+            Image(systemName: "exclamationmark.triangle.fill")
                 .symbolRenderingMode(.multicolor)
                 .foregroundStyle(.yellow)
                 .font(.title3)
@@ -198,8 +196,7 @@ struct ErrorCallout: View {
     }
 }
 
-// Helper status row used in ornament panel
-struct HelperStatusIndicator: View {
+struct OverlayHelperStatusIndicator: View {
     let status: ImmersiveViewModel.HelperStatus
 
     var body: some View {
@@ -233,7 +230,6 @@ struct HelperStatusIndicator: View {
         .shadow(color: Color.black.opacity(0.2), radius: 8, y: 6)
     }
 
-    // MARK: derived props
     private var title: String {
         switch status {
         case .idle: return ""
@@ -243,7 +239,6 @@ struct HelperStatusIndicator: View {
         case .simulatedAcknowledged: return "Preview Only"
         }
     }
-
     private var message: String {
         switch status {
         case .idle: return ""
@@ -254,7 +249,6 @@ struct HelperStatusIndicator: View {
             return "Saved context locally: \(context)."
         }
     }
-
     private var icon: String {
         switch status {
         case .idle: return ""
@@ -264,7 +258,6 @@ struct HelperStatusIndicator: View {
         case .simulatedAcknowledged: return "eyeglasses"
         }
     }
-
     private var iconColor: Color {
         switch status {
         case .idle: return .clear
@@ -274,7 +267,6 @@ struct HelperStatusIndicator: View {
         case .simulatedAcknowledged: return .mint
         }
     }
-
     private var backgroundTint: Color {
         switch status {
         case .idle: return .clear
@@ -284,7 +276,6 @@ struct HelperStatusIndicator: View {
         case .simulatedAcknowledged: return Color.mint.opacity(0.22)
         }
     }
-
     private var borderTint: Color {
         switch status {
         case .idle: return .clear
@@ -293,6 +284,78 @@ struct HelperStatusIndicator: View {
         case .failed: return Color.yellow.opacity(0.55)
         case .simulatedAcknowledged: return Color.mint.opacity(0.45)
         }
+    }
+}
+
+struct TypewriterCaptionText: View {
+    let text: String
+    var speed: Double = 0.028   // seconds per character
+
+    @State private var displayed: String = ""
+    @State private var showCursor: Bool = true
+
+    var body: some View {
+        Text((displayed.isEmpty ? "" : displayed) + (showCursor ? "▌" : " "))
+            .font(.callout.monospaced().weight(.medium))
+            .foregroundStyle(.cyan)
+            .textSelection(.enabled)
+            .multilineTextAlignment(.leading)
+            .animation(nil, value: displayed)
+            .task(id: text) {
+                await typeOut(newText: text)
+            }
+            .onAppear {
+                startCursorBlink()
+            }
+    }
+
+    private func typeOut(newText: String) async {
+        let content = newText.isEmpty ? "Waiting for caption…" : newText
+        displayed = ""
+        for ch in content {
+            displayed.append(ch)
+            try? await Task.sleep(nanoseconds: UInt64(speed * 1_000_000_000))
+        }
+    }
+
+    private func startCursorBlink() {
+        withAnimation(.easeInOut(duration: 0.6).repeatForever()) {
+            showCursor.toggle()
+        }
+    }
+}
+
+struct PreseedLogoCircle: View {
+    // Place your logo image in Assets.xcassets with this name.
+    var imageName: String = "preseed-logo-circle.jpg"
+
+    var body: some View {
+        ZStack {
+            // Brand mark with safe fallback if the asset isn't present yet
+            logoImage()
+                .resizable()
+                .scaledToFill()
+                .clipShape(Circle().inset(by: 6))
+        }
+        .frame(width: 28, height: 28)
+    }
+
+    private func logoImage() -> Image {
+        #if canImport(UIKit)
+        if let ui = UIImage(named: imageName) {
+            return Image(uiImage: ui)
+        } else {
+            return Image(systemName: "sparkles")
+        }
+        #elseif canImport(AppKit)
+        if let ns = NSImage(named: imageName) {
+            return Image(nsImage: ns)
+        } else {
+            return Image(systemName: "sparkles")
+        }
+        #else
+        return Image(systemName: "sparkles")
+        #endif
     }
 }
 
