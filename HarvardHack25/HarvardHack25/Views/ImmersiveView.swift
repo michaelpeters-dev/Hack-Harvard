@@ -1,27 +1,88 @@
 import SwiftUI
 
+// MARK: - Single neon outline (OUTER container only) with negative padding expansion
+struct NeonOutline: ViewModifier {
+    var color: Color = .cyan
+    var lineWidth: CGFloat = 12
+    var cornerRadius: CGFloat = 32
+    var glow: CGFloat = 32
+    /// Push the outline outward by N points (use small numbers like 1–3)
+    var expand: CGFloat = 3
+
+    func body(content: Content) -> some View {
+        content
+            // 1) crisp stroke exactly on (or slightly outside) the bounds
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(color.opacity(0.95), lineWidth: lineWidth)
+                    .padding(-expand) // ⬅️ expand outward
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false)
+            )
+            // 2) primary glow
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(color.opacity(0.80), lineWidth: lineWidth)
+                    .padding(-expand) // match inner stroke
+                    .blur(radius: glow)
+                    .allowsHitTesting(false)
+            )
+            // 3) outer bloom
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(color.opacity(0.35), lineWidth: lineWidth)
+                    .padding(-(expand + 1)) // a touch more outward for the bloom
+                    .blur(radius: glow * 1.8)
+                    .allowsHitTesting(false)
+            )
+            .compositingGroup()
+    }
+}
+
+extension View {
+    func neonOutline(color: Color = .cyan,
+                     lineWidth: CGFloat = 2,
+                     cornerRadius: CGFloat = 32,
+                     glow: CGFloat = 14,
+                     expand: CGFloat = 2) -> some View {
+        modifier(NeonOutline(color: color,
+                             lineWidth: lineWidth,
+                             cornerRadius: cornerRadius,
+                             glow: glow,
+                             expand: expand))
+    }
+}
+
+// MARK: - Main View
+
 struct ImmersiveView: View {
     @EnvironmentObject private var viewModel: ImmersiveViewModel
     @Environment(\.openURL) private var openURL
 
     // One source of truth for sizing/shape
     private enum Panel {
-        static let width: CGFloat  = 360     // change once, both layers follow
+        static let width: CGFloat  = 360
         static let corner: CGFloat = 22
     }
 
-    @State private var panelScale: CGFloat = 1.0   // if you ever want to animate scale
+    @State private var panelScale: CGFloat = 1.0
 
     var body: some View {
-        HStack(alignment: .top, spacing: 24) {
-            overlayPanel
-            captionPanel
-        }
-        .onAppear { viewModel.onAppear() }
-        .onDisappear { viewModel.onDisappear() }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.top, 28)
-        .padding(.leading, 36)
+        // Build the cluster WITHOUT outline first so the overlay hugs final bounds.
+        let cluster =
+            HStack(alignment: .top, spacing: 24) {
+                overlayPanel
+                captionPanel
+            }
+
+        cluster
+            .onAppear { viewModel.onAppear() }
+            .onDisappear { viewModel.onDisappear() }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.top, 28)
+            .padding(.leading, 36)
+            // Apply outline LAST; tweak `expand` to nudge outward more/less
+            .neonOutline(color: .cyan, lineWidth: 2, cornerRadius: 32, glow: 14, expand: 2)
     }
 
     // MARK: - Matched outer+inner panels
@@ -123,11 +184,8 @@ struct ImmersiveView: View {
             Grid(horizontalSpacing: 12, verticalSpacing: 10) {
                 GridRow {
                     metricTile(title: "JPEG", value: "\(viewModel.lastJPEGBytes) B")
-                    metricTile(title: "Objects", value: "\(viewModel.objects.count)")
-                }
-                GridRow {
-                    metricTile(title: "Crop", value: "\(viewModel.lastCropSide)×\(viewModel.lastCropSide)")
-                    metricTile(title: "Caption", value: viewModel.lastLANCaption.isEmpty ? "" : "\(viewModel.lastLANCaption.count)")
+                    metricTile(title: "CROP", value: "\(viewModel.lastCropSide)×\(viewModel.lastCropSide)")
+                    metricTile(title: "CAPTION", value: viewModel.lastLANCaption.isEmpty ? "—" : "\(viewModel.lastLANCaption.count)")
                 }
             }
         }
@@ -170,14 +228,15 @@ struct ImmersiveView: View {
                 })
             }
         } label: {
-            Label("Call For Help", systemImage: "phone.arrow.up.right")
+            Label("Call", systemImage: "phone.arrow.up.right")
                 .font(.callout.weight(.semibold))
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .controlSize(.large)
-        .tint(Color(red: 0x00/255.0, green: 0x5A/255.0, blue: 0xEE/255.0))
-        .accessibilityHint("Immediately call Pierce via FaceTime or phone if available.")
+        .tint(.cyan)
+        .shadow(color: .cyan.opacity(0.6), radius: 8)
+        .shadow(color: .cyan.opacity(0.35), radius: 16)
+
     }
 }
 
@@ -324,17 +383,15 @@ struct OverlayHelperStatusIndicator: View {
 
     private var showSpinner: Bool {
         switch status {
-        case .sending, .dialing:
-            return true
-        default:
-            return false
+        case .sending, .dialing: return true
+        default: return false
         }
     }
 }
 
 struct TypewriterCaptionText: View {
     let text: String
-    var speed: Double = 0.028   // seconds per character
+    var speed: Double = 0.028
 
     @State private var displayed: String = ""
     @State private var showCursor: Bool = true
@@ -349,9 +406,7 @@ struct TypewriterCaptionText: View {
             .task(id: text) {
                 await typeOut(newText: text)
             }
-            .onAppear {
-                startCursorBlink()
-            }
+            .onAppear { startCursorBlink() }
     }
 
     private func typeOut(newText: String) async {
@@ -369,8 +424,6 @@ struct TypewriterCaptionText: View {
         }
     }
 }
-
-import SwiftUI
 
 struct PreseedLogoCircle: View {
     var size: CGFloat = 24
@@ -396,7 +449,6 @@ struct PreseedLogoCircle: View {
                 )
                 .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: ring))
 
-            // Size SF Symbol with .font (keeps it vector & crisp)
             Image(systemName: "sparkles")
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.white)
@@ -406,9 +458,7 @@ struct PreseedLogoCircle: View {
         }
         .frame(width: snap(size), height: snap(size))
         .compositingGroup()
-        // If your SDK supports colorMode:
         .drawingGroup(opaque: false, colorMode: .linear)
-        // Otherwise, use:
-        // .drawingGroup()
     }
 }
+

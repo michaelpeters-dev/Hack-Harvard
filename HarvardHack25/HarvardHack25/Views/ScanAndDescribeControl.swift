@@ -14,7 +14,7 @@ struct ScanAndDescribeControl: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Scan & Preview")
+            Text("Current Snapshot")
                 .font(.subheadline.weight(.semibold))
 
             ZStack {
@@ -48,7 +48,7 @@ struct ScanAndDescribeControl: View {
             .frame(minHeight: 360, maxHeight: 520)
 
             Button(action: startScan) {
-                Label("Scan Latest Photo", systemImage: "viewfinder.rectangular")
+                Label("Scan", systemImage: "viewfinder.rectangular")
                     .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
@@ -106,9 +106,9 @@ struct ScanAndDescribeControl: View {
         var message: String {
             switch self {
             case .idle:
-                return "Tap scan to refresh the preview and caption."
+                return "Tap scan to refresh the snapchat."
             case .processing:
-                return "Processing latest photo…"
+                return "Processing latest snapshot…"
             case .waitingForCaption:
                 return "Generating caption and audio."
             }
