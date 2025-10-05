@@ -41,6 +41,7 @@ final class ImmersiveViewModel: ObservableObject {
     private let watcher = PhotoWatcher()
     private let fallbackCaption = "Not sure."
     private let helperService: HelperEscalationHandling?
+    private let ownerContact = OwnerContact()
 
     init(helperService: HelperEscalationHandling? = nil) {
         self.helperService = helperService
@@ -199,6 +200,23 @@ final class ImmersiveViewModel: ObservableObject {
         }
     }
 
+    func callPierce(using opener: (URL) async -> Void) async {
+        do {
+            helperStatus = .dialing
+            let urls = try ownerContact.prioritizedContactURLs()
+            for url in urls {
+                await opener(url)
+                helperStatus = .dialed
+                return
+            }
+            helperStatus = .dialFailed
+            lastErrorDescription = "Could not start a call to Pierce."
+        } catch {
+            helperStatus = .dialFailed
+            lastErrorDescription = error.localizedDescription
+        }
+    }
+
     // MARK: - TTS
 
     private func speak(_ text: String) {
@@ -215,6 +233,9 @@ final class ImmersiveViewModel: ObservableObject {
         case sending
         case sent
         case failed
+        case dialing
+        case dialed
+        case dialFailed
         case simulatedAcknowledged(context: String)
     }
 

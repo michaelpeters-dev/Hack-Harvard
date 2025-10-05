@@ -48,6 +48,12 @@ private extension HelperStatusIndicator {
             return "Request sent"
         case .failed:
             return "Failed to send"
+        case .dialing:
+            return "Calling Pierce"
+        case .dialed:
+            return "Call launched"
+        case .dialFailed:
+            return "Call failed"
         case .simulatedAcknowledged:
             return "Helper acknowledged"
         }
@@ -57,6 +63,8 @@ private extension HelperStatusIndicator {
         switch status {
         case .simulatedAcknowledged(let context):
             return context
+        case .dialFailed:
+            return "No supported calling method responded."
         default:
             return nil
         }
@@ -72,6 +80,12 @@ private extension HelperStatusIndicator {
             return "checkmark.circle"
         case .failed:
             return "xmark.octagon"
+        case .dialing:
+            return "phone.arrow.up.right"
+        case .dialed:
+            return "phone"
+        case .dialFailed:
+            return "phone.down"
         case .simulatedAcknowledged:
             return "person.wave.2"
         }
@@ -79,7 +93,7 @@ private extension HelperStatusIndicator {
 
     var iconVariant: SymbolVariants {
         switch status {
-        case .sent, .failed:
+        case .sent, .failed, .dialed, .dialFailed:
             return .fill
         default:
             return .none
@@ -90,11 +104,11 @@ private extension HelperStatusIndicator {
         switch status {
         case .idle:
             return .secondary
-        case .sending:
+        case .sending, .dialing:
             return .orange
-        case .sent, .simulatedAcknowledged:
+        case .sent, .dialed, .simulatedAcknowledged:
             return .green
-        case .failed:
+        case .failed, .dialFailed:
             return .red
         }
     }
@@ -103,11 +117,11 @@ private extension HelperStatusIndicator {
         switch status {
         case .idle:
             return Color.white.opacity(0.04)
-        case .sending:
+        case .sending, .dialing:
             return Color.orange.opacity(0.08)
-        case .sent, .simulatedAcknowledged:
+        case .sent, .dialed, .simulatedAcknowledged:
             return Color.green.opacity(0.08)
-        case .failed:
+        case .failed, .dialFailed:
             return Color.red.opacity(0.10)
         }
     }
@@ -116,11 +130,11 @@ private extension HelperStatusIndicator {
         switch status {
         case .idle:
             return Color.white.opacity(0.12)
-        case .sending:
+        case .sending, .dialing:
             return Color.orange.opacity(0.20)
-        case .sent, .simulatedAcknowledged:
+        case .sent, .dialed, .simulatedAcknowledged:
             return Color.green.opacity(0.22)
-        case .failed:
+        case .failed, .dialFailed:
             return Color.red.opacity(0.25)
         }
     }
@@ -140,6 +154,9 @@ private extension HelperStatusIndicator {
         HelperStatusIndicator(status: .sending)
         HelperStatusIndicator(status: .sent)
         HelperStatusIndicator(status: .failed)
+        HelperStatusIndicator(status: .dialing)
+        HelperStatusIndicator(status: .dialed)
+        HelperStatusIndicator(status: .dialFailed)
         HelperStatusIndicator(status: .simulatedAcknowledged(context: "Looking for a helper near you."))
     }
     .padding()

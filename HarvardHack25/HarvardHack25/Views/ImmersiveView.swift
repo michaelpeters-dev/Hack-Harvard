@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ImmersiveView: View {
     @EnvironmentObject private var viewModel: ImmersiveViewModel
+    @Environment(\.openURL) private var openURL
 
     // One source of truth for sizing/shape
     private enum Panel {
@@ -50,6 +51,8 @@ struct ImmersiveView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+
+                callForHelpButton
 
                 // Preview (driven by viewModel.latestPreview)
                 LatestPhotoPreview()
@@ -166,6 +169,24 @@ struct ImmersiveView: View {
                 .transition(.opacity.combined(with: .scale))
         }
     }
+
+    private var callForHelpButton: some View {
+        Button {
+            Task {
+                await viewModel.callPierce(using: { url in
+                    openURL(url)
+                })
+            }
+        } label: {
+            Label("Call For Help", systemImage: "phone.arrow.up.right")
+                .font(.callout.weight(.semibold))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .tint(.orange)
+        .accessibilityHint("Immediately call Pierce via FaceTime or phone if available.")
+    }
 }
 
 // MARK: - UI helpers (kept local for convenience)
@@ -213,7 +234,7 @@ struct OverlayHelperStatusIndicator: View {
             }
             Spacer(minLength: 0)
 
-            if case .sending = status {
+            if showSpinner {
                 ProgressView().progressViewStyle(.circular)
             }
         }
@@ -236,53 +257,85 @@ struct OverlayHelperStatusIndicator: View {
         case .sending: return "Contacting Helper"
         case .sent: return "Helper Ping Sent"
         case .failed: return "Request Failed"
+        case .dialing: return "Calling Pierce"
+        case .dialed: return "Call Launched"
+        case .dialFailed: return "Call Failed"
         case .simulatedAcknowledged: return "Preview Only"
         }
     }
+
     private var message: String {
         switch status {
         case .idle: return ""
         case .sending: return "Stay focused on the object—help is on the way."
         case .sent: return "We'll relay any helper responses as soon as they arrive."
         case .failed: return "We couldn't reach the network. Try again or check connectivity."
+        case .dialing: return "Launching FaceTime or phone call to Pierce."
+        case .dialed: return "FaceTime or phone should now be connecting."
+        case .dialFailed: return "No supported calling method responded."
         case let .simulatedAcknowledged(context):
             return "Saved context locally: \(context)."
         }
     }
+
     private var icon: String {
         switch status {
         case .idle: return ""
         case .sending: return "paperplane.fill"
         case .sent: return "checkmark.seal.fill"
         case .failed: return "exclamationmark.triangle.fill"
+        case .dialing: return "phone.arrow.up.right"
+        case .dialed: return "phone.fill"
+        case .dialFailed: return "phone.down"
         case .simulatedAcknowledged: return "eyeglasses"
         }
     }
+
     private var iconColor: Color {
         switch status {
         case .idle: return .clear
         case .sending: return .cyan
         case .sent: return .green
         case .failed: return .yellow
+        case .dialing: return .orange
+        case .dialed: return .green
+        case .dialFailed: return .red
         case .simulatedAcknowledged: return .mint
         }
     }
+
     private var backgroundTint: Color {
         switch status {
         case .idle: return .clear
         case .sending: return Color.cyan.opacity(0.22)
         case .sent: return Color.green.opacity(0.22)
         case .failed: return Color.yellow.opacity(0.22)
+        case .dialing: return Color.orange.opacity(0.22)
+        case .dialed: return Color.green.opacity(0.22)
+        case .dialFailed: return Color.red.opacity(0.22)
         case .simulatedAcknowledged: return Color.mint.opacity(0.22)
         }
     }
+
     private var borderTint: Color {
         switch status {
         case .idle: return .clear
         case .sending: return Color.cyan.opacity(0.45)
         case .sent: return Color.green.opacity(0.45)
         case .failed: return Color.yellow.opacity(0.55)
+        case .dialing: return Color.orange.opacity(0.45)
+        case .dialed: return Color.green.opacity(0.45)
+        case .dialFailed: return Color.red.opacity(0.55)
         case .simulatedAcknowledged: return Color.mint.opacity(0.45)
+        }
+    }
+
+    private var showSpinner: Bool {
+        switch status {
+        case .sending, .dialing:
+            return true
+        default:
+            return false
         }
     }
 }
