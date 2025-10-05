@@ -176,7 +176,7 @@ struct ImmersiveView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
-        .tint(.orange)
+        .tint(Color(red: 0x00/255.0, green: 0x5A/255.0, blue: 0xEE/255.0))
         .accessibilityHint("Immediately call Pierce via FaceTime or phone if available.")
     }
 }

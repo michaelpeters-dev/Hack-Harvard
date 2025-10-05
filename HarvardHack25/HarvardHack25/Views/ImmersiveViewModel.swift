@@ -159,7 +159,9 @@ final class ImmersiveViewModel: ObservableObject {
 
                 // 5) UI + TTS
                 let spoken = caption.isEmpty ? self.fallbackCaption : caption
-                self.lastLANCaption = spoken
+                await MainActor.run {
+                    self.lastLANCaption = spoken
+                }
                 self.speak(spoken)
 
                 // cache
@@ -167,8 +169,10 @@ final class ImmersiveViewModel: ObservableObject {
                 self.cachedSide = 320
 
             } catch {
-                self.lastErrorDescription = error.localizedDescription
-                self.lastLANCaption = self.fallbackCaption
+                await MainActor.run {
+                    self.lastErrorDescription = error.localizedDescription
+                    self.lastLANCaption = self.fallbackCaption
+                }
                 self.speak(self.fallbackCaption)
             }
         }

@@ -4,38 +4,48 @@ struct ScanAndDescribeControl: View {
     @EnvironmentObject private var viewModel: ImmersiveViewModel
     @State private var status: Status = .idle
 
+    private enum Layout {
+        static let containerCornerRadius: CGFloat = 14
+        static let previewCornerRadius: CGFloat = 12
+        static let previewPadding: CGFloat = 10
+        static let placeholderIconSize: CGFloat = 58
+        static let placeholderPadding: CGFloat = 52
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Scan & Preview")
                 .font(.subheadline.weight(.semibold))
 
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: Layout.containerCornerRadius, style: .continuous)
                     .fill(.white.opacity(0.06))
 
                 if let preview = viewModel.latestPreview {
                     Image(uiImage: preview)
                         .resizable()
                         .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: Layout.previewCornerRadius, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: Layout.previewCornerRadius, style: .continuous)
                                 .stroke(.white.opacity(0.18), lineWidth: 1)
                         )
-                        .padding(6)
+                        .padding(Layout.previewPadding)
                 } else {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 10) {
                         Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 40, weight: .semibold))
+                            .font(.system(size: Layout.placeholderIconSize, weight: .semibold))
                             .foregroundStyle(.secondary)
                         Text("No preview yet")
                             .font(.footnote.weight(.medium))
                             .foregroundStyle(.secondary)
                     }
-                    .padding(32)
+                    .frame(maxWidth: .infinity)
+                    .padding(Layout.placeholderPadding)
                 }
             }
-            .frame(maxHeight: 240)
+            .frame(minHeight: 360, maxHeight: 520)
 
             Button(action: startScan) {
                 Label("Scan Latest Photo", systemImage: "viewfinder.rectangular")
