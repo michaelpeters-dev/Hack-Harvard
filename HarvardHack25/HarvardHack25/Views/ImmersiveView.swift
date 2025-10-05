@@ -30,16 +30,16 @@ struct ImmersiveView: View {
                 }
 
                 Divider().blendMode(.plusLighter)
-                
-                // Primary action
-                Button(action: viewModel.scanLatestFromCameraRoll) {   // 👈 updated
+
+                // Primary action – manual trigger uses the same pipeline as the watcher
+                Button(action: viewModel.processLatestPhotoNow) {
                     Label("Scan & Describe", systemImage: "viewfinder.rectangular")
                         .font(.title3.weight(.semibold))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
 
-                // 🔹 NEW: Pick & describe latest photo from library
+                // Preview (driven by viewModel.latestPreview)
                 LatestPhotoPreview()
                     .environmentObject(viewModel)
 
@@ -143,9 +143,11 @@ struct ImmersiveView: View {
     }
 }
 
-// MARK: - UI helpers kept from your previous file
+// UIHelpers.swift
+import SwiftUI
 
-private struct StatusBadge: View {
+// Small status pill used in the header
+struct StatusBadge: View {
     let isActive: Bool
 
     var body: some View {
@@ -153,7 +155,8 @@ private struct StatusBadge: View {
             Capsule(style: .continuous)
                 .fill(isActive ? Color.green.gradient : Color.yellow.gradient)
                 .opacity(0.65)
-            Label(isActive ? "Ready" : "Paused", systemImage: isActive ? "waveform" : "pause.fill")
+            Label(isActive ? "Ready" : "Paused",
+                  systemImage: isActive ? "waveform" : "pause.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.black.opacity(0.85))
                 .padding(.horizontal, 16)
@@ -168,7 +171,35 @@ private struct StatusBadge: View {
     }
 }
 
-private struct HelperStatusIndicator: View {
+// Callout for errors
+struct ErrorCallout: View {
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill") // valid SF Symbol
+                .symbolRenderingMode(.multicolor)
+                .foregroundStyle(.yellow)
+                .font(.title3)
+            Text(message)
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.yellow)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.yellow.opacity(0.18))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.yellow.opacity(0.35), lineWidth: 1)
+        )
+    }
+}
+
+// Helper status row used in ornament panel
+struct HelperStatusIndicator: View {
     let status: ImmersiveViewModel.HelperStatus
 
     var body: some View {
@@ -186,8 +217,7 @@ private struct HelperStatusIndicator: View {
             Spacer(minLength: 0)
 
             if case .sending = status {
-                ProgressView()
-                    .progressViewStyle(.circular)
+                ProgressView().progressViewStyle(.circular)
             }
         }
         .padding(.vertical, 14)
@@ -203,6 +233,7 @@ private struct HelperStatusIndicator: View {
         .shadow(color: Color.black.opacity(0.2), radius: 8, y: 6)
     }
 
+    // MARK: derived props
     private var title: String {
         switch status {
         case .idle: return ""
@@ -265,28 +296,3 @@ private struct HelperStatusIndicator: View {
     }
 }
 
-private struct ErrorCallout: View {
-    let message: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "warningtriangle.fill")
-                .symbolRenderingMode(.multicolor)
-                .foregroundStyle(.yellow)
-                .font(.title3)
-            Text(message)
-                .font(.callout.weight(.medium))
-                .foregroundStyle(.yellow)
-                .multilineTextAlignment(.leading)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.yellow.opacity(0.18))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.yellow.opacity(0.35), lineWidth: 1)
-        )
-    }
-}
