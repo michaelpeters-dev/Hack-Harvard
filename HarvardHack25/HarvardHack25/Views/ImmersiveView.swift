@@ -44,19 +44,11 @@ struct ImmersiveView: View {
 
                 Divider().blendMode(.plusLighter)
 
-                // Primary action – manual trigger uses the same pipeline as the watcher
-                Button(action: viewModel.processLatestPhotoNow) {
-                    Label("Scan & Describe", systemImage: "viewfinder.rectangular")
-                        .font(.title3.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
+                // Integrated scan + preview control
+                ScanAndDescribeControl()
+                    .environmentObject(viewModel)
 
                 callForHelpButton
-
-                // Preview (driven by viewModel.latestPreview)
-                LatestPhotoPreview()
-                    .environmentObject(viewModel)
 
                 debugMetrics
                 helperStatusView

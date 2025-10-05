@@ -35,6 +35,10 @@ final class ImmersiveViewModel: ObservableObject {
     @Published private(set) var cachedJPEG: Data?
     @Published private(set) var cachedSide: Int = 0
 
+    // Preview polling
+    private var previewPollingTask: Task<Void, Never>?
+    private var lastPreviewAssetID: String?
+
     // Services
     private let ttsSynth = AVSpeechSynthesizer()
     private let lanClient = LANCaptionClient()
@@ -66,6 +70,8 @@ final class ImmersiveViewModel: ObservableObject {
         }
         watcher.start(fireLatestImmediately: false)
 
+        startPreviewPolling()
+
         // Warm cache (try latest photo; fall back to bundled image)
         Task.detached { [weak self] in
             guard let self else { return }
@@ -85,6 +91,7 @@ final class ImmersiveViewModel: ObservableObject {
 
     func onDisappear() {
         watcher.stop()
+        stopPreviewPolling()
         isStreaming = false
     }
 
@@ -123,20 +130,14 @@ final class ImmersiveViewModel: ObservableObject {
 
             do {
                 // 1) Fetch original/adjusted image bytes (HEIC & iCloud safe)
-                let data: Data = try await withCheckedThrowingContinuation { cont in
-                    let opts = PHImageRequestOptions()
-                    opts.isNetworkAccessAllowed = true
-                    opts.deliveryMode = .highQualityFormat
-                    opts.version = .current
-                    PHImageManager.default().requestImageDataAndOrientation(for: asset, options: opts) { data, _, _, _ in
-                        if let data { cont.resume(returning: data) }
-                        else { cont.resume(throwing: SimpleError("Failed to load image data.")) }
-                    }
-                }
+                let data = try await self.loadImageData(for: asset)
 
                 // 2) Optional: keep a UI preview
                 if let ui = UIImage(data: data) {
-                    await MainActor.run { self.latestPreview = ui }
+                    await MainActor.run {
+                        self.latestPreview = ui
+                        self.lastPreviewAssetID = asset.localIdentifier
+                    }
                 }
 
                 // 3) Decode → center-square 320×320 JPEG (your current spec)
@@ -240,6 +241,53 @@ final class ImmersiveViewModel: ObservableObject {
     }
 
     // MARK: - Utility: preload latest or bundle
+
+    private func startPreviewPolling() {
+        previewPollingTask?.cancel()
+        previewPollingTask = Task.detached { [weak self] in
+            guard let self else { return }
+            await self.refreshPreviewIfNeeded()
+            while Task.isCancelled == false {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                await self.refreshPreviewIfNeeded()
+            }
+        }
+    }
+
+    private func stopPreviewPolling() {
+        previewPollingTask?.cancel()
+        previewPollingTask = nil
+    }
+
+    @MainActor
+    private func refreshPreviewIfNeeded() async {
+        guard let asset = latestImageAsset() else { return }
+        let identifier = asset.localIdentifier
+        if identifier == lastPreviewAssetID { return }
+
+        do {
+            let data = try await loadImageData(for: asset)
+            if let ui = UIImage(data: data) {
+                latestPreview = ui
+                lastPreviewAssetID = identifier
+            }
+        } catch {
+            lastErrorDescription = error.localizedDescription
+        }
+    }
+
+    private func loadImageData(for asset: PHAsset) async throws -> Data {
+        try await withCheckedThrowingContinuation { cont in
+            let opts = PHImageRequestOptions()
+            opts.isNetworkAccessAllowed = true
+            opts.deliveryMode = .highQualityFormat
+            opts.version = .current
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: opts) { data, _, _, _ in
+                if let data { cont.resume(returning: data) }
+                else { cont.resume(throwing: SimpleError("Failed to load image data.")) }
+            }
+        }
+    }
 
     private func latestPhotoOrBundleJPEG() async throws -> (Data, Int) {
         do {
